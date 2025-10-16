@@ -37,7 +37,9 @@ export default function Home() {
             Login
           </button>
 
-          <button className="bg-teal-500 hover:bg-teal-400 text-white py-3 rounded-md text-lg shadow-md transition-transform transform hover:scale-105">
+          <button 
+          onClick={() => router.push("/register")}
+          className="bg-teal-500 hover:bg-teal-400 text-white py-3 rounded-md text-lg shadow-md transition-transform transform hover:scale-105">
             Register
           </button>
         </div>

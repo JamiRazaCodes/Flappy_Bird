@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -24,7 +25,7 @@ export default function RegisterPage() {
       const res = await fetch("http://localhost:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       const data = await res.json();
@@ -51,6 +52,16 @@ export default function RegisterPage() {
         <p className="text-gray-200 mb-6">Create your Flappy Bird account!</p>
 
         <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          {/* Name Input */}
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="p-3 rounded-md bg-white/20 text-white placeholder-gray-200 border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            required
+          />
+
           <input
             type="email"
             placeholder="Email"

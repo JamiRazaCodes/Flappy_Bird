@@ -20,6 +20,7 @@ mongoose
 
 // User Schema
 const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
   email: { type: String, unique: true },
   password: String,
 });
@@ -28,13 +29,14 @@ const User = mongoose.model("User", userSchema);
 
 // Register Endpoint
 app.post("/api/register", async (req, res) => {
-  const { email, password } = req.body;
-  const existing = await User.findOne({ email });
+  const { name, email, password } = req.body;
+  console.log("Received register data:", req.body);
 
+  const existing = await User.findOne({ email });
   if (existing) return res.status(400).json({ message: "User already exists" });
 
   const hashed = await bcrypt.hash(password, 10);
-  const user = new User({ email, password: hashed });
+  const user = new User({ name, email, password: hashed });
   await user.save();
 
   res.json({ message: "User registered successfully" });
@@ -52,10 +54,14 @@ app.post("/api/login", async (req, res) => {
 
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-  res.json({ token });
+  // Send user info too
+  res.json({
+    token,
+    user: { name: user.name, email: user.email },
+  });
 });
 
-// Protected route example
+// Protected route
 app.get("/api/profile", async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: "No token" });
