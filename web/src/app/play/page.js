@@ -1,198 +1,148 @@
 "use client";
-
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
 
 export default function Play() {
-  const router = useRouter();
   const canvasRef = useRef(null);
+  const [score, setScore] = useState(0);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [isStarted, setIsStarted] = useState(false);
 
-  const runningRef = useRef(false);
-  const bird = useRef({ x: 100, y: 0, vy: 0 });
-  const pipes = useRef([]);
-  const scoreRef = useRef(0);
-  const bestScoreRef = useRef(0);
+  const bird = { x: 80, y: 200, radius: 15, velocity: 0 };
+  const gravity = 0.5;
+  const jumpStrength = -8;
+  let pipes = [];
+  let animationFrame;
 
-  const gravity = 0.6;
-  const gap = 150;
-  const pipeSpeed = 1;
-
-  const [, setScore] = useState(0);
-  const [, setBestScore] = useState(0);
-
-  const birdImg = useRef(null);
-  const cloudImg = useRef(null);
-
-  // load images once
   useEffect(() => {
-    birdImg.current = new Image();
-    birdImg.current.src = "/pngwing.com.png";
-
-    cloudImg.current = new Image();
-    cloudImg.current.src = "/cloud.png";
-
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    reset();
-    draw();
-
-    return () => window.removeEventListener("resize", resizeCanvas);
-  }, []);
-
-  function resizeCanvas() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  function reset() {
-    const canvas = canvasRef.current;
-    bird.current = { x: 100, y: canvas.height / 2, vy: 0 };
-    pipes.current = [{ x: canvas.width + 60, top: 0, height: 200 }];
-    scoreRef.current = 0;
-    runningRef.current = false;
-    setScore(0);
-  }
-
-  function loop() {
-    update();
-    draw();
-    if (runningRef.current) requestAnimationFrame(loop);
-  }
-
-  function update() {
-    const canvas = canvasRef.current;
-    bird.current.vy += gravity;
-    bird.current.y += bird.current.vy;
-
-    if (pipes.current.length === 0 || pipes.current[pipes.current.length - 1].x < canvas.width / 2) {
-      const topH = 100 + Math.random() * (canvas.height - 300);
-      pipes.current.push({ x: canvas.width, top: 0, height: topH });
-    }
-
-    pipes.current.forEach((p, i) => {
-      p.x -= pipeSpeed;
-      if (!p.scored && bird.current.x > p.x + 52) {
-        scoreRef.current += 1;
-        p.scored = true;
-        setScore(scoreRef.current);
-      }
-      if (p.x < -60) pipes.current.splice(i, 1);
-    });
-
-    // collision
-    if (bird.current.y > canvas.height || bird.current.y < 0) gameOver();
-
-    for (const p of pipes.current) {
-      const pipeW = 52;
-      if (bird.current.x + 15 > p.x && bird.current.x - 15 < p.x + pipeW) {
-        if (bird.current.y - 12 < p.height || bird.current.y + 12 > p.height + gap) {
-          gameOver();
-        }
-      }
-    }
-  }
-
-  function draw() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+    const width = (canvas.width = 400);
+    const height = (canvas.height = 600);
 
-    // --- Background ---
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, "#87CEEB");
-    gradient.addColorStop(1, "#b0e0e6");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const resetGame = () => {
+      bird.y = 200;
+      bird.velocity = 0;
+      pipes = [];
+      setScore(0);
+      setIsGameOver(false);
+    };
 
-    // --- Clouds ---
-    if (cloudImg.current && cloudImg.current.complete) {
-      for (let i = 0; i < 5; i++) {
-        const x = (i * 300 + Date.now() / 50) % canvas.width;
-        const y = 50 + i * 60;
-        ctx.drawImage(cloudImg.current, x, y, 120, 60);
+    const handleJump = () => {
+      if (!isStarted) setIsStarted(true);
+      if (!isGameOver) bird.velocity = jumpStrength;
+      if (isGameOver) resetGame();
+    };
+
+    window.addEventListener("keydown", (e) => e.code === "Space" && handleJump());
+    canvas.addEventListener("click", handleJump);
+
+    const createPipe = () => {
+      const gap = 140;
+      const topHeight = Math.random() * (height - gap - 200) + 50;
+      pipes.push({
+        x: width,
+        topHeight,
+        bottomY: topHeight + gap,
+      });
+    };
+
+    const draw = () => {
+      ctx.fillStyle = "#70c5ce";
+      ctx.fillRect(0, 0, width, height);
+
+      // Bird
+      ctx.beginPath();
+      ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "yellow";
+      ctx.fill();
+      ctx.closePath();
+
+      // Pipes
+      ctx.fillStyle = "green";
+      pipes.forEach((pipe) => {
+        ctx.fillRect(pipe.x, 0, 50, pipe.topHeight);
+        ctx.fillRect(pipe.x, pipe.bottomY, 50, height - pipe.bottomY);
+      });
+
+      // Score
+      ctx.fillStyle = "white";
+      ctx.font = "24px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 30);
+
+      if (isGameOver) {
+        ctx.fillStyle = "red";
+        ctx.font = "36px Arial";
+        ctx.fillText("Game Over!", 100, height / 2);
+        ctx.font = "20px Arial";
+        ctx.fillText("Press Space or Click to Restart", 45, height / 2 + 40);
       }
-    }
+    };
 
-    // --- Pipes ---
-    pipes.current.forEach((p) => {
-      const pipeGradient = ctx.createLinearGradient(p.x, 0, p.x + 52, 0);
-      pipeGradient.addColorStop(0, "#27ae60");
-      pipeGradient.addColorStop(1, "#2ecc71");
-      ctx.fillStyle = pipeGradient;
+    let frameCount = 0;
+    const update = () => {
+      if (isStarted && !isGameOver) {
+        frameCount++;
 
-      ctx.fillRect(p.x, 0, 52, p.height);
-      ctx.fillRect(p.x, p.height + gap, 52, canvas.height - (p.height + gap));
-    });
+        // Gravity
+        bird.velocity += gravity;
+        bird.y += bird.velocity;
 
-    // --- Bird ---
-    if (birdImg.current && birdImg.current.complete) {
-      const birdWidth = 100;
-      const birdHeight = 24;
-      ctx.drawImage(
-        birdImg.current,
-        bird.current.x - birdWidth / 2,
-        bird.current.y - birdHeight / 2,
-        birdWidth,
-        birdHeight
-      );
-    }
+        // Pipes movement
+        pipes.forEach((pipe) => (pipe.x -= 3));
 
-    // --- Score ---
-    ctx.fillStyle = "rgba(255,255,255,0.2)";
-    ctx.fillRect(canvas.width / 2 - 60, 30, 120, 50);
-    ctx.fillStyle = "white";
-    ctx.font = "28px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(scoreRef.current, canvas.width / 2, 65);
-  }
+        // Remove old pipes
+        if (pipes.length && pipes[0].x < -50) pipes.shift();
 
-  function flap() {
-    bird.current.vy = -9;
-    if (!runningRef.current) {
-      runningRef.current = true;
-      requestAnimationFrame(loop);
-    }
-  }
+        // Add new pipes
+        if (frameCount % 100 === 0) createPipe();
 
-  function gameOver() {
-    runningRef.current = false;
-    bestScoreRef.current = Math.max(bestScoreRef.current, scoreRef.current);
-    setBestScore(bestScoreRef.current);
-  }
+        // Collision detection
+        pipes.forEach((pipe) => {
+          if (
+            bird.x + bird.radius > pipe.x &&
+            bird.x - bird.radius < pipe.x + 50 &&
+            (bird.y - bird.radius < pipe.topHeight ||
+              bird.y + bird.radius > pipe.bottomY)
+          ) {
+            setIsGameOver(true);
+          }
+
+          // Score increase
+          if (pipe.x + 50 === bird.x) setScore((s) => s + 1);
+        });
+
+        // Ground / ceiling collision
+        if (bird.y + bird.radius > height || bird.y - bird.radius < 0) {
+          setIsGameOver(true);
+        }
+      }
+
+      draw();
+      animationFrame = requestAnimationFrame(update);
+    };
+
+    update();
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      window.removeEventListener("keydown", handleJump);
+      canvas.removeEventListener("click", handleJump);
+    };
+  }, [isGameOver, isStarted]);
 
   return (
-    <div className="w-full h-screen relative overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full cursor-pointer"
-        onClick={flap}
-      />
-
-      <div className="absolute top-4 left-4 text-white text-lg bg-black/30 backdrop-blur-md px-4 py-2 rounded-lg">
-        Score: {scoreRef.current} — Best: {bestScoreRef.current}
-      </div>
-
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4">
-        <button
-          onClick={reset}
-          className="px-4 py-2 bg-gray-700/70 backdrop-blur-md rounded-lg hover:bg-gray-600 transition"
-        >
-          Reset
-        </button>
-        <button
-          onClick={flap}
-          className="px-4 py-2 bg-green-600/70 backdrop-blur-md rounded-lg hover:bg-green-500 transition"
-        >
-          Flap
-        </button>
-        <button
-          onClick={() => router.push("/")}
-          className="px-4 py-2 bg-red-600/70 backdrop-blur-md rounded-lg hover:bg-red-500 transition"
-        >
-          ← Home
-        </button>
-      </div>
+    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-sky-300 to-sky-600">
+      <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+        🐤 Flap Game
+      </h1>
+      <canvas ref={canvasRef} className="rounded-lg shadow-2xl border-4 border-white" />
+      <p className="mt-4 text-white text-lg">
+        {isStarted
+          ? isGameOver
+            ? "Click or press SPACE to restart"
+            : "Click or press SPACE to jump"
+          : "Click or press SPACE to start"}
+      </p>
     </div>
   );
 }
