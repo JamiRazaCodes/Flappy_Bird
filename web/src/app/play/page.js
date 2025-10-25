@@ -7,34 +7,21 @@ export default function Play() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
 
-  const bird = { x: 80, y: 200, radius: 15, velocity: 0 };
-  const gravity = 0.5;
-  const jumpStrength = -8;
-  let pipes = [];
-  let animationFrame;
-
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const width = (canvas.width = 400);
     const height = (canvas.height = 600);
 
-    const resetGame = () => {
-      bird.y = 200;
-      bird.velocity = 0;
-      pipes = [];
-      setScore(0);
-      setIsGameOver(false);
-    };
+    const bird = { x: 80, y: 200, radius: 15, velocity: 0 };
+    const gravity = 0.5;
+    const jumpStrength = -8;
 
-    const handleJump = () => {
-      if (!isStarted) setIsStarted(true);
-      if (!isGameOver) bird.velocity = jumpStrength;
-      if (isGameOver) resetGame();
-    };
-
-    window.addEventListener("keydown", (e) => e.code === "Space" && handleJump());
-    canvas.addEventListener("click", handleJump);
+    let pipes = [];
+    let frameCount = 0;
+    let currentScore = 0;
+    let animationFrame;
+    let gameActive = false;
 
     const createPipe = () => {
       const gap = 140;
@@ -43,8 +30,39 @@ export default function Play() {
         x: width,
         topHeight,
         bottomY: topHeight + gap,
+        passed: false,
       });
     };
+
+    const resetGame = () => {
+      // Reset everything
+      cancelAnimationFrame(animationFrame);
+      pipes = [];
+      frameCount = 0;
+      bird.y = 200;
+      bird.velocity = 0;
+      currentScore = 0;
+      setScore(0);
+      setIsGameOver(false);
+      setIsStarted(false);
+      gameActive = false;
+      draw(); // clear screen
+    };
+
+    const handleJump = () => {
+      if (!isStarted) {
+        setIsStarted(true);
+        gameActive = true;
+      }
+      if (isGameOver) {
+        resetGame();
+      } else {
+        bird.velocity = jumpStrength;
+      }
+    };
+
+    window.addEventListener("keydown", (e) => e.code === "Space" && handleJump());
+    canvas.addEventListener("click", handleJump);
 
     const draw = () => {
       ctx.fillStyle = "#70c5ce";
@@ -67,7 +85,7 @@ export default function Play() {
       // Score
       ctx.fillStyle = "white";
       ctx.font = "24px Arial";
-      ctx.fillText(`Score: ${score}`, 10, 30);
+      ctx.fillText(`Score: ${currentScore}`, 10, 30);
 
       if (isGameOver) {
         ctx.fillStyle = "red";
@@ -78,26 +96,20 @@ export default function Play() {
       }
     };
 
-    let frameCount = 0;
     const update = () => {
-      if (isStarted && !isGameOver) {
+      if (gameActive && !isGameOver) {
         frameCount++;
 
-        // Gravity
         bird.velocity += gravity;
         bird.y += bird.velocity;
 
-        // Pipes movement
         pipes.forEach((pipe) => (pipe.x -= 3));
-
-        // Remove old pipes
         if (pipes.length && pipes[0].x < -50) pipes.shift();
 
-        // Add new pipes
         if (frameCount % 100 === 0) createPipe();
 
-        // Collision detection
         pipes.forEach((pipe) => {
+          // Collision
           if (
             bird.x + bird.radius > pipe.x &&
             bird.x - bird.radius < pipe.x + 50 &&
@@ -105,15 +117,21 @@ export default function Play() {
               bird.y + bird.radius > pipe.bottomY)
           ) {
             setIsGameOver(true);
+            gameActive = false;
           }
 
-          // Score increase
-          if (pipe.x + 50 === bird.x) setScore((s) => s + 1);
+          // Scoring
+          if (!pipe.passed && pipe.x + 50 < bird.x) {
+            pipe.passed = true;
+            currentScore++;
+            setScore(currentScore);
+          }
         });
 
-        // Ground / ceiling collision
+        // Out of bounds
         if (bird.y + bird.radius > height || bird.y - bird.radius < 0) {
           setIsGameOver(true);
+          gameActive = false;
         }
       }
 
@@ -128,20 +146,26 @@ export default function Play() {
       window.removeEventListener("keydown", handleJump);
       canvas.removeEventListener("click", handleJump);
     };
-  }, [isGameOver, isStarted]);
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-sky-300 to-sky-600">
       <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
-        🐤 Flap Game
+        🐤 Flap Flap
       </h1>
-      <canvas ref={canvasRef} className="rounded-lg shadow-2xl border-4 border-white" />
+      <canvas
+        ref={canvasRef}
+        className="rounded-lg shadow-2xl border-4 border-white"
+      />
       <p className="mt-4 text-white text-lg">
         {isStarted
           ? isGameOver
             ? "Click or press SPACE to restart"
             : "Click or press SPACE to jump"
           : "Click or press SPACE to start"}
+      </p>
+      <p className="mt-2 text-2xl text-yellow-300 font-bold drop-shadow-md">
+        Score: {score}
       </p>
     </div>
   );

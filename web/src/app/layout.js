@@ -2,7 +2,7 @@ import "./globals.css";
 
 
 export const metadata = {
-  title: "Flappy Bird",
+  title: "Flappy Flap",
   description: "Developed By Jami Raza",
 };
 
