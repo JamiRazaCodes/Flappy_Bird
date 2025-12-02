@@ -3,9 +3,16 @@ import React, { useEffect, useRef, useState } from "react";
 
 export default function Play() {
   const canvasRef = useRef(null);
+
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
+
+  const birdRef = useRef({ x: 80, y: 200, radius: 15, velocity: 0 });
+  const pipesRef = useRef([]);
+  const frameRef = useRef(0);
+  const gameActiveRef = useRef(false);
+  const animationRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -13,103 +20,100 @@ export default function Play() {
     const width = (canvas.width = 400);
     const height = (canvas.height = 600);
 
-    const bird = { x: 80, y: 200, radius: 15, velocity: 0 };
     const gravity = 0.5;
     const jumpStrength = -8;
-
-    let pipes = [];
-    let frameCount = 0;
-    let currentScore = 0;
-    let animationFrame;
-    let gameActive = false;
 
     const createPipe = () => {
       const gap = 140;
       const topHeight = Math.random() * (height - gap - 200) + 50;
-      pipes.push({
+      pipesRef.current.push({
         x: width,
         topHeight,
         bottomY: topHeight + gap,
-        passed: false,
+        passed: false
       });
     };
 
     const resetGame = () => {
-      // Reset everything
-      cancelAnimationFrame(animationFrame);
-      pipes = [];
-      frameCount = 0;
-      bird.y = 200;
-      bird.velocity = 0;
-      currentScore = 0;
+      cancelAnimationFrame(animationRef.current);
+
+      birdRef.current = { x: 80, y: 200, radius: 15, velocity: 0 };
+      pipesRef.current = [];
+      frameRef.current = 0;
+
       setScore(0);
       setIsGameOver(false);
       setIsStarted(false);
-      gameActive = false;
-      draw(); // clear screen
+
+      gameActiveRef.current = false;
+      draw();
     };
 
-    const handleJump = () => {
+    const jump = () => {
       if (!isStarted) {
         setIsStarted(true);
-        gameActive = true;
+        gameActiveRef.current = true;
       }
+
       if (isGameOver) {
         resetGame();
-      } else {
-        bird.velocity = jumpStrength;
+        return;
       }
+
+      birdRef.current.velocity = jumpStrength;
     };
 
-    window.addEventListener("keydown", (e) => e.code === "Space" && handleJump());
-    canvas.addEventListener("click", handleJump);
+    // FIX: Stable event handler
+    const handleKey = (e) => {
+      if (e.code === "Space") jump();
+    };
+
+    window.addEventListener("keydown", handleKey);
+    canvas.addEventListener("click", jump);
 
     const draw = () => {
       ctx.fillStyle = "#70c5ce";
       ctx.fillRect(0, 0, width, height);
 
-      // Bird
+      const bird = birdRef.current;
+
       ctx.beginPath();
       ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
       ctx.fillStyle = "yellow";
       ctx.fill();
-      ctx.closePath();
 
-      // Pipes
       ctx.fillStyle = "green";
-      pipes.forEach((pipe) => {
+      pipesRef.current.forEach(pipe => {
         ctx.fillRect(pipe.x, 0, 50, pipe.topHeight);
         ctx.fillRect(pipe.x, pipe.bottomY, 50, height - pipe.bottomY);
       });
 
-      // Score
       ctx.fillStyle = "white";
       ctx.font = "24px Arial";
-      ctx.fillText(`Score: ${currentScore}`, 10, 30);
+      ctx.fillText(`Score: ${score}`, 10, 30);
 
       if (isGameOver) {
         ctx.fillStyle = "red";
         ctx.font = "36px Arial";
         ctx.fillText("Game Over!", 100, height / 2);
-        ctx.font = "20px Arial";
-        ctx.fillText("Press Space or Click to Restart", 45, height / 2 + 40);
       }
     };
 
     const update = () => {
-      if (gameActive && !isGameOver) {
-        frameCount++;
+      const bird = birdRef.current;
+
+      if (gameActiveRef.current && !isGameOver) {
+        frameRef.current++;
 
         bird.velocity += gravity;
         bird.y += bird.velocity;
 
-        pipes.forEach((pipe) => (pipe.x -= 3));
-        if (pipes.length && pipes[0].x < -50) pipes.shift();
+        pipesRef.current.forEach(pipe => (pipe.x -= 3));
+        if (pipesRef.current[0]?.x < -50) pipesRef.current.shift();
 
-        if (frameCount % 100 === 0) createPipe();
+        if (frameRef.current % 100 === 0) createPipe();
 
-        pipes.forEach((pipe) => {
-          // Collision
+        pipesRef.current.forEach(pipe => {
           if (
             bird.x + bird.radius > pipe.x &&
             bird.x - bird.radius < pipe.x + 50 &&
@@ -117,56 +121,46 @@ export default function Play() {
               bird.y + bird.radius > pipe.bottomY)
           ) {
             setIsGameOver(true);
-            gameActive = false;
+            gameActiveRef.current = false;
           }
 
-          // Scoring
           if (!pipe.passed && pipe.x + 50 < bird.x) {
             pipe.passed = true;
-            currentScore++;
-            setScore(currentScore);
+            setScore(s => s + 1);
           }
         });
 
-        // Out of bounds
         if (bird.y + bird.radius > height || bird.y - bird.radius < 0) {
           setIsGameOver(true);
-          gameActive = false;
+          gameActiveRef.current = false;
         }
       }
 
       draw();
-      animationFrame = requestAnimationFrame(update);
+      animationRef.current = requestAnimationFrame(update);
     };
 
     update();
 
     return () => {
-      cancelAnimationFrame(animationFrame);
-      window.removeEventListener("keydown", handleJump);
-      canvas.removeEventListener("click", handleJump);
+      cancelAnimationFrame(animationRef.current);
+      window.removeEventListener("keydown", handleKey);
+      canvas.removeEventListener("click", jump);
     };
-  }, []);
+  }, [isGameOver]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-sky-300 to-sky-600">
-      <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
-        🐤 Flap Flap
-      </h1>
-      <canvas
-        ref={canvasRef}
-        className="rounded-lg shadow-2xl border-4 border-white"
-      />
-      <p className="mt-4 text-white text-lg">
+    <div className="flex flex-col items-center justify-center bg-gradient-to-b from-sky-300 to-sky-600">
+      <h1 className="text-4xl text-white font-bold mb-4">🐤 Flap Flap</h1>
+      <canvas ref={canvasRef} className="rounded-lg border-4 border-white shadow-xl" />
+      <p className="text-white mt-4">
         {isStarted
           ? isGameOver
-            ? "Click or press SPACE to restart"
-            : "Click or press SPACE to jump"
-          : "Click or press SPACE to start"}
+            ? "Click SPACE to Restart"
+            : "Jump with SPACE"
+          : "Press SPACE to Start"}
       </p>
-      <p className="mt-2 text-2xl text-yellow-300 font-bold drop-shadow-md">
-        Score: {score}
-      </p>
+      <p className="text-yellow-300 text-xl font-bold">Score: {score}</p>
     </div>
   );
 }
