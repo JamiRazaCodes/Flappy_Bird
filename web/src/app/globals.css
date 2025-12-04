@@ -1,1 +1,76 @@
 @import "tailwindcss";
+
+/* Sky background */
+body {
+  margin: 0;
+  padding: 0;
+  background: url('/sky.jpg') no-repeat center center fixed;
+  background-size: cover;
+  overflow-x: hidden;
+}
+
+/* CLOUDS ANIMATION LAYER */
+.cloud {
+  position: absolute;
+  top: 0;
+  width: 300px;
+  opacity: 0.8;
+  animation: moveClouds 40s linear infinite;
+}
+
+/* Different speeds */
+.cloud:nth-child(1) {
+  animation-duration: 75s;
+  top: 1%;
+}
+
+.cloud:nth-child(2) {
+  animation-duration: 55s;
+  top: 30%;
+}
+
+.cloud:nth-child(3) {
+  animation-duration: 85s;
+  top: 50%;
+}
+.cloud:nth-child(4) {
+  width: 300px;
+  top: 60%;
+  animation-duration: 50s;
+}
+
+.cloud:nth-child(5) {
+  width: 200px;
+  top: 75%;
+  animation-duration: 70s;
+}
+
+@keyframes moveClouds {
+  0% {
+    transform: translateX(-350px);
+  }
+  100% {
+    transform: translateX(120vw);
+  }
+}
+
+.glass-btn {
+  width: 100%;
+  padding: 14px 0;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  background: rgb(123, 180, 255);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
+}
+
+/* Hover: glow + lift */
+.glass-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.25);
+}

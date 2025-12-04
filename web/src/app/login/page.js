@@ -47,12 +47,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-700 via-pink-400 to-yellow-200">
+    <div className="flex items-center justify-center min-h-screen">
       <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center transform hover:scale-105 transition duration-300">
-        <h1 className="text-3xl font-extrabold mb-4 text-white drop-shadow-lg">
+        <h1 className="text-3xl font-extrabold mb-4 text-white drop-shadow-lg drop-shadow-blue-500/50">
           Player Login
         </h1>
-        <p className="text-gray-200 mb-6">Welcome back to Flappy Bird!</p>
+        <p className="text-blue-600 mb-6">Welcome back to Flappy Bird!</p>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <input
@@ -60,7 +60,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="p-3 rounded-md bg-white/20 text-white placeholder-gray-200 border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            className="p-3 rounded-md bg-white/20 text-white placeholder-zinc-500 border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-300"
             required
           />
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="p-3 rounded-md bg-white/20 text-white placeholder-gray-200 border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+            className="p-3 rounded-md bg-white/20 text-white placeholder-zinc-500 border border-white/30 focus:outline-none focus:ring-2 focus:ring-yellow-300"
             required
           />
 

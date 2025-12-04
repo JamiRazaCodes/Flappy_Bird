@@ -88,25 +88,48 @@ export default function Play() {
     window.addEventListener("keydown", handleKey);
     canvas.addEventListener("click", jump);
 
+    const bgImage = new Image();
+    bgImage.src = "/bg.jpg";
+
     const jetImage = new Image();
-    jetImage.src = "/jet.png"; 
+    jetImage.src = "/flipjet.gif";
+
+ let imagesLoaded = 0;
+
+function checkStart() {
+  if (imagesLoaded === 2) {
+    console.log("All images loaded — starting game");
+    update(); // start game loop
+  }
+}
+
+// Background
+bgImage.onload = () => {
+  console.log("Background loaded");
+  imagesLoaded++;
+  checkStart();
+};
+
+bgImage.onerror = () => console.error("Failed to load background image!");
+
+// Jet
+jetImage.onload = () => {
+  console.log("Jet loaded");
+  imagesLoaded++;
+  checkStart();
+};
+
+jetImage.onerror = () => console.error("Failed to load jet image!");
 
     const draw = () => {
       const width = widthRef.current;
       const height = heightRef.current;
 
-   const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "#0d47a1");   // Darker blue at the top
-    gradient.addColorStop(0.5, "#42a5f5"); // Medium blue
-    gradient.addColorStop(1, "#87CEEB");   // Light blue at the bottom
-
-   // Apply the gradient
-   ctx.fillStyle = gradient;
-   ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(bgImage, 0, 0, width, height);
 
    const jet = jetRef.current;
-  const jetWidth = 120;
-  const jetHeight = 120;
+  const jetWidth = 140;
+  const jetHeight = 70;
   ctx.drawImage(jetImage, jet.x - jetWidth/2, jet.y - jetHeight/2, jetWidth, jetHeight);
 
 
@@ -115,14 +138,14 @@ export default function Play() {
   // Create a vertical gradient for each pipe
   const pipeGradient = ctx.createLinearGradient(pipe.x, 0, pipe.x, height);
   pipeGradient.addColorStop(0, "#32CD32"); // Lime Green top
-  pipeGradient.addColorStop(1, "#228B22"); // Darker green bottom
+  pipeGradient.addColorStop(1, "#6bb86bff"); // Darker green bottom
 
   ctx.fillStyle = pipeGradient;
   ctx.fillRect(pipe.x, 0, 60, pipe.topHeight);          // Top pipe
   ctx.fillRect(pipe.x, pipe.bottomY, 60, height - pipe.bottomY); // Bottom pipe
 
   // Optional: Add an outline for extra contrast
-  ctx.strokeStyle = "#006400"; // Dark green border
+  ctx.strokeStyle = "#4aa54aff"; // Dark green border
   ctx.lineWidth = 3;
   ctx.strokeRect(pipe.x, 0, 60, pipe.topHeight);
   ctx.strokeRect(pipe.x, pipe.bottomY, 60, height - pipe.bottomY);
@@ -183,8 +206,6 @@ export default function Play() {
       animationRef.current = requestAnimationFrame(update);
     };
 
-    update();
-
     return () => {
       cancelAnimationFrame(animationRef.current);
       window.removeEventListener("keydown", handleKey);
@@ -203,11 +224,11 @@ export default function Play() {
   />
 
   {/* TITLE - TOP CENTER */}
-<h1 className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-3xl font-bold z-10 flex items-center gap-2">
+<h1 className="absolute top-4 left-1/2 -translate-x-1/2 text-white drop-shadow-[0_0_10px_#0088CC] text-3xl font-bold z-10 flex items-center gap-2">
  
   Flappy Jet
    <NextImage
-    src="/jet.png"
+    src="/jet.gif"
     alt="Jet"
     width={80}
     height={80}
@@ -216,12 +237,12 @@ export default function Play() {
 
 
   {/* SCORE - TOP RIGHT */}
-  <p className="absolute top-4 left-4 text-yellow-300 text-2xl font-bold z-10">
+  <p className="absolute top-4 left-4 text-blue-600 text-2xl font-bold z-10">
     Score: {score}
   </p>
 
   {/* GAME MESSAGE - BOTTOM CENTER */}
-  <p className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white text-lg z-10">
+  <p className="absolute bottom-10 left-1/2 -translate-x-1/2 text-blue-600 text-lg z-10">
     {isStarted
       ? isGameOver
         ? "Press SPACE or TAP to Restart"

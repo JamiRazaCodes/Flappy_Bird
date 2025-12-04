@@ -14,35 +14,42 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-700 via-pink-400 to-yellow-200">
+    <div className="flex items-center justify-center min-h-screen">
       <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center transform hover:scale-105 transition duration-300">
-        <h1 className="text-4xl font-extrabold mb-4 text-white drop-shadow-lg">
-          Flappy Bird
+        <h1 className="text-4xl font-extrabold mb-4 text-white drop-shadow-lg drop-shadow-blue-500/50">
+          Flappy Jet
         </h1>
-        <p className="text-gray-200 mb-6 text-lg">
+        <p className="text-blue-600 mb-6 text-lg">
           Tap to fly, avoid the pipes, and beat the high score!
         </p>
 
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={() => router.push("/play")}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black py-3 rounded-md font-semibold text-lg shadow-md transition-transform transform hover:scale-105"
-          >
-            ▶ Play Guest
-          </button>
+     <div className="flex flex-col gap-4 w-64 mx-auto">
 
-          <button 
-          onClick={() => router.push("/login")}
-          className="bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-md text-lg shadow-md transition-transform transform hover:scale-105">
-            Login
-          </button>
+  {/* PLAY */}
+  <button
+    onClick={() => router.push("/play")}
+    className="bg-orange-400 hover:bg-orange-500 text-white py-3 rounded-xl font-bold text-lg shadow-lg transition-transform transform hover:-translate-y-1 hover:scale-105"
+  >
+    Play Guest ▶
+  </button>
 
-          <button 
-          onClick={() => router.push("/register")}
-          className="bg-teal-500 hover:bg-teal-400 text-white py-3 rounded-md text-lg shadow-md transition-transform transform hover:scale-105">
-            Register
-          </button>
-        </div>
+  {/* LOGIN */}
+  <button
+    onClick={() => router.push("/login")}
+    className="bg-indigo-700 hover:bg-indigo-800 text-white py-3 rounded-xl font-bold text-lg shadow-lg transition-transform transform hover:-translate-y-1 hover:scale-105"
+  >
+    Login
+  </button>
+
+  {/* REGISTER */}
+  <button
+    onClick={() => router.push("/register")}
+    className="bg-pink-500 hover:bg-pink-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg transition-transform transform hover:-translate-y-1 hover:scale-105"
+  >
+    Register
+  </button>
+
+</div>
       </div>
     </div>
   );

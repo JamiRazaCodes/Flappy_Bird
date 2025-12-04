@@ -19,13 +19,13 @@ export default function ProfilePage() {
 
   if (!user) return null;
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-700 via-pink-400 to-yellow-200">
+    <div className="flex items-center justify-center min-h-screen">
       <div className="bg-white/10 backdrop-blur-lg p-10 rounded-3xl shadow-2xl text-center border border-white/20">
-        <h1 className="text-4xl font-bold text-white mb-6">🎮 Player Profile</h1>
-        <p className="text-yellow-200 text-lg mb-4">Name: {user.name}</p>
-        <p className="text-yellow-200 text-lg">Email: {user.email}</p>
+        <h1 className="text-4xl font-bold text-white drop-shadow-lg drop-shadow-blue-500/50 mb-10">🎮 Player Profile</h1>
+        <p className="text-blue-600 drop-shadow-lg drop-shadow-blue-500/500 text-3xl font-semibold">{user.name}</p>
+        <p className="text-white drop-shadow-lg drop-shadow-blue-500/50 text-3xl font-semibold"> {user.email}</p>
 
-        <div className="flex flex-col items-center gap-2 mt-4">
+        <div className="flex flex-col items-center gap-2 mt-15">
   <button
     onClick={() => router.push("/play")}
     className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white py-3 px-8 rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-2xl hover:from-indigo-600 hover:to-pink-600 active:scale-95"
