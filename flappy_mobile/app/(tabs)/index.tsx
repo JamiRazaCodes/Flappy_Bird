@@ -32,10 +32,10 @@ export default function HomeScreen() {
         >
           <Text style={styles.smallText}>Profile</Text>
         </TouchableOpacity>
-{/* 
-        <TouchableOpacity
+
+        {/* <TouchableOpacity
           style={styles.smallBtn}
-          onPress={() => router.push("/leaderboard")}
+          onPress={() => router.push("/")}
         >
           <Text style={styles.smallText}>Leaderboard</Text>
         </TouchableOpacity> */}
