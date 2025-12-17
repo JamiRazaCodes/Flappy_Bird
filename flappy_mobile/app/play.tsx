@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   Image,
 } from "react-native";
+import { Audio } from "expo-av";
 
 const { width, height } = Dimensions.get("window");
 
@@ -16,108 +17,113 @@ const PIPE_SPEED = 3;
 const JET_WIDTH = 90;
 const JET_HEIGHT = 70;
 
-
 export default function PlayScreen() {
   const [score, setScore] = useState(0);
   const [isStarted, setIsStarted] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [jetY, setJetY] = useState(height / 2);
+
+  const jetYRef = useRef(height / 2);
+  const velocityRef = useRef(0);
   const pipesRef = useRef<any[]>([]);
   const pipeCounterRef = useRef(0);
-
-
-  const velocityRef = useRef(0);
-  const jetYRef = useRef(height / 2);
-
 
   const gravity = 0.5;
   const jumpStrength = -8;
 
-  // ✅ GAME LOOP USING setInterval (Works in RN)
+  const flySound = useRef<Audio.Sound | null>(null);
+  const boomSound = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+  const loadSounds = async () => {
+    const fly = new Audio.Sound();
+    const boom = new Audio.Sound();
+
+    await fly.loadAsync(require("../assets/sounds/fly.wav"));
+    await boom.loadAsync(require("../assets/sounds/hit.wav"));
+
+    flySound.current = fly;
+    boomSound.current = boom;
+  };
+
+  loadSounds();
+
+  return () => {
+    flySound.current?.unloadAsync();
+    boomSound.current?.unloadAsync();
+  };
+}, []);
+
   useEffect(() => {
     if (!isStarted || isGameOver) return;
 
-const createPipe = () => {
-  const minHeight = 60;
-  const maxHeight = height - GAP - 200;
-  const topHeight = Math.random() * maxHeight + minHeight;
+    const createPipe = () => {
+      const minHeight = 60;
+      const maxHeight = height - GAP - 150;
+      const topHeight = Math.random() * maxHeight + minHeight;
 
-  pipesRef.current.push({
-    x: width,
-    topHeight,
-    bottomY: topHeight + GAP,
-    passed: false,
-  });
-};
+      pipesRef.current.push({
+        x: width,
+        topHeight,
+        bottomY: topHeight + GAP,
+        passed: false,
+      });
+    };
 
-const loop = setInterval(() => {
-  // Gravity
-  velocityRef.current += gravity;
-  jetYRef.current += velocityRef.current;
+    const loop = setInterval(() => {
+      velocityRef.current += gravity;
+      jetYRef.current += velocityRef.current;
 
-const newY = jetYRef.current;
+      if (jetYRef.current < 0 || jetYRef.current > height - JET_HEIGHT) {
+        setIsGameOver(true);
+        flySound.current?.stopAsync();
+        boomSound.current?.replayAsync();
+        return;
+      }
 
-if (newY < 0 || newY > height - 80) {
-  setIsGameOver(true);
-  return;
-}
+      setJetY(jetYRef.current);
 
-setJetY(newY);
+     pipesRef.current.forEach((pipe) => {
+  pipe.x -= PIPE_SPEED;
 
-  // Move pipes
-  pipesRef.current.forEach((pipe) => {
-    pipe.x -= PIPE_SPEED;
-  });
+  const HITBOX = 22;
 
-  // Remove off-screen pipes
-  pipesRef.current = pipesRef.current.filter(
-    (pipe) => pipe.x > -PIPE_WIDTH
-  );
+  const jetLeft = width / 4 + HITBOX;
+  const jetRight = jetLeft + JET_WIDTH - HITBOX * 2;
+  const jetTop = jetYRef.current + HITBOX;
+  const jetBottom = jetTop + JET_HEIGHT - HITBOX * 2;
 
-  // Create new pipes
-  if (pipeCounterRef.current % 90 === 0) {
-    createPipe();
+  const pipeLeft = pipe.x + 6;
+  const pipeRight = pipe.x + PIPE_WIDTH - 6;
+
+  const hit =
+    jetRight > pipeLeft &&
+    jetLeft < pipeRight &&
+    (jetTop < pipe.topHeight || jetBottom > pipe.bottomY);
+
+  if (hit) {
+    setIsGameOver(true);
   }
 
-  pipeCounterRef.current++;
-}, 16);
+  if (!pipe.passed && pipeRight < jetLeft) {
+    pipe.passed = true;
+    setScore((s) => s + 1);
+  }
+});
+
+      pipesRef.current = pipesRef.current.filter(
+        (pipe) => pipe.x > -PIPE_WIDTH
+      );
+
+      if (pipeCounterRef.current % 90 === 0) {
+        createPipe();
+      }
+
+      pipeCounterRef.current++;
+    }, 16);
 
     return () => clearInterval(loop);
   }, [isStarted, isGameOver]);
-
-useEffect(() => {
-  if (!isStarted || isGameOver) return;
-
-  pipesRef.current.forEach((pipe) => {
-    const jetLeft = width / 4;
-    const jetRight = jetLeft + JET_WIDTH;
-    const jetTop = jetY;
-    const jetBottom = jetY + JET_HEIGHT;
-
-    const pipeLeft = pipe.x;
-    const pipeRight = pipe.x + PIPE_WIDTH;
-
-    const hitTopPipe =
-  jetRight > pipeLeft &&
-  jetLeft < pipeRight &&
-  jetTop <= pipe.topHeight + 5;
-
-const hitBottomPipe =
-  jetRight > pipeLeft &&
-  jetLeft < pipeRight &&
-  jetBottom >= pipe.bottomY - 5;
-
-if (hitTopPipe || hitBottomPipe) {
-  setIsGameOver(true);
-}
-
-    if (!pipe.passed && pipeRight < jetLeft) {
-      pipe.passed = true;
-      setScore((prev) => prev + 1);
-    }
-  });
-}, [jetY]);
-
 
   const handleTap = () => {
     if (!isStarted) {
@@ -125,15 +131,19 @@ if (hitTopPipe || hitBottomPipe) {
       setIsGameOver(false);
       pipesRef.current = [];
       setScore(0);
-      setJetY(height / 2);
       jetYRef.current = height / 2;
       velocityRef.current = 0;
+      setJetY(height / 2);
+      flySound.current?.replayAsync();
+      boomSound.current?.stopAsync(); 
       return;
     }
 
     if (isGameOver) {
       setIsGameOver(false);
       setIsStarted(false);
+      flySound.current?.stopAsync(); 
+      boomSound.current?.replayAsync(); 
       pipesRef.current = [];
       return;
     }
@@ -144,52 +154,42 @@ if (hitTopPipe || hitBottomPipe) {
   return (
     <TouchableWithoutFeedback onPress={handleTap}>
       <View style={styles.container}>
-        {/* 🖼️ Background */}
         <Image
           source={require("../assets/images/bg.jpg")}
           style={styles.background}
         />
 
-        {/* 🔝 Top Bar */}
         <View style={styles.topBar}>
           <Text style={styles.title}>FLAPPY JET ✈️</Text>
           <Text style={styles.score}>{score}</Text>
         </View>
 
-        {/* ✈️ Jet */}
         <Image
           source={require("../assets/images/jet.png")}
           style={[styles.jet, { top: jetY }]}
         />
 
-      {pipesRef.current.map((pipe, index) => (
-  <View key={index}>
-    <View
-      style={[
-        styles.pipe,
-        {
-          top: 0,
-          height: pipe.topHeight,
-          left: pipe.x,
-        },
-      ]}
-    />
-    <View
-      style={[
-        styles.pipe,
-        {
-          top: pipe.bottomY,
-          height: height - pipe.bottomY,
-          left: pipe.x,
-        },
-      ]}
-    />
-  </View>
-))}
+        {pipesRef.current.map((pipe, index) => (
+          <View key={index}>
+            <View
+              style={[
+                styles.pipe,
+                { top: 0, height: pipe.topHeight, left: pipe.x },
+              ]}
+            />
+            <View
+              style={[
+                styles.pipe,
+                {
+                  top: pipe.bottomY,
+                  height: height - pipe.bottomY,
+                  left: pipe.x,
+                },
+              ]}
+            />
+          </View>
+        ))}
 
-
-
-        {/* 🧾 Status Text */}
         <View style={styles.messageBox}>
           <Text style={styles.messageText}>
             {!isStarted
@@ -203,11 +203,9 @@ if (hitTopPipe || hitBottomPipe) {
     </TouchableWithoutFeedback>
   );
 }
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#070B34", // Dark game blue
-  },
+  container: { flex: 1, backgroundColor: "#070B34" },
   background: {
     position: "absolute",
     width: "100%",
@@ -222,28 +220,18 @@ const styles = StyleSheet.create({
     right: 20,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     zIndex: 10,
   },
-  title: {
-    color: "#00F5FF",
-    fontSize: 24,
-    fontWeight: "900",
-    textShadowColor: "#000",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-  },
-  score: {
-    color: "#FFD93D",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
+  title: { color: "#00F5FF", fontSize: 24, fontWeight: "900" },
+  score: { color: "#FFD93D", fontSize: 24, fontWeight: "bold" },
   jet: {
     position: "absolute",
     left: width / 4,
     width: 90,
     height: 70,
     resizeMode: "contain",
+    backgroundColor: "rgba(255,0,0,0.3)"
+
   },
   messageBox: {
     position: "absolute",
@@ -254,19 +242,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
   },
-  messageText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-    letterSpacing: 1,
-  },
+  messageText: { color: "#FFF", fontSize: 18, fontWeight: "bold" },
   pipe: {
-  position: "absolute",
-  width: 60,
-  backgroundColor: "#00e676",
-  borderWidth: 3,
-  borderColor: "#00c853",
-  borderRadius: 10,
-},
-
+    position: "absolute",
+    width: 60,
+    backgroundColor: "#00e676",
+    borderWidth: 3,
+    borderColor: "#00c853",
+    borderRadius: 10,
+  },
 });
